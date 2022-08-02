@@ -1,4 +1,6 @@
+import { List } from 'postcss/lib/list';
 import React from 'react';
+import { MutableArray } from 'vitest';
 import {
   mapResponsiveValue,
   normalizeResponsiveValue,
@@ -21,6 +23,8 @@ export interface ConnectButtonProps {
   showBalance?: ResponsiveValue<boolean>;
   chainStatus?: ResponsiveValue<ChainStatus>;
   label?: string;
+  allowList?: string[];
+  blockList?: string[];
 }
 
 const defaultProps = {
@@ -28,6 +32,8 @@ const defaultProps = {
   chainStatus: { largeScreen: 'full', smallScreen: 'icon' },
   label: 'Connect Wallet',
   showBalance: { largeScreen: true, smallScreen: false },
+  allowList: Array(""),
+  blockList: Array("")
 } as const;
 
 export function ConnectButton({
@@ -35,8 +41,11 @@ export function ConnectButton({
   chainStatus = defaultProps.chainStatus,
   label = defaultProps.label,
   showBalance = defaultProps.showBalance,
+  allowList = defaultProps.allowList,
+  blockList = defaultProps.blockList,
 }: ConnectButtonProps) {
   const chains = useRainbowKitChains();
+  let allowed;
 
   return (
     <ConnectButtonRenderer>
@@ -49,6 +58,27 @@ export function ConnectButton({
         openConnectModal,
       }) => {
         const unsupportedChain = chain?.unsupported ?? false;
+        if (allowList[0] == "") {
+          allowed = true;
+        } else {
+          const allowedCheck = allowList.filter(address => account?.address == address);
+          if (allowedCheck == []) {
+            allowed = false;
+          } else {
+            allowed = true;
+          }
+        }
+
+        if (blockList[0] == "") {
+          allowed = true;
+        } else {
+          const blockedCheck = blockList.filter(address => account?.address == address);
+          if (blockedCheck == []) {
+            allowed = true;
+          } else {
+            allowed = false;
+          }
+        }
 
         return (
           <Box
@@ -65,6 +95,61 @@ export function ConnectButton({
           >
             {mounted && account ? (
               <>
+              {allowList && (allowList.length >= 1 || !allowed) && (
+                <Box
+
+                  alignItems="center"
+                  as="button"
+                  background={
+                    !allowed
+                      ? 'connectButtonBackgroundError'
+                      : 'connectButtonBackground'
+                  }
+                  borderRadius="connectButton"
+                  boxShadow="connectButton"
+                  className={touchableStyles({
+                    active: 'shrink',
+                    hover: 'grow',
+                  })}
+                  color={
+                    !allowed
+                      ? 'connectButtonTextError'
+                      : 'connectButtonText'
+                  }
+                  display={mapResponsiveValue(chainStatus, value =>
+                    value === 'none' ? 'none' : 'flex'
+                  )}
+                  fontFamily="body"
+                  fontWeight="bold"
+                  gap="6"
+                  key={
+                    // Force re-mount to prevent CSS transition
+                    !allowed ? 'unsupported' : 'supported'
+                  }
+                  onClick={openChainModal}
+                  paddingX="10"
+                  paddingY="8"
+                  transition="default"
+                  type="button"
+                >
+                  {!allowed ? (
+                    <Box
+                      alignItems="center"
+                      display="flex"
+                      height="24"
+                      paddingX="4"
+                    >
+                      Not Allowed
+                    </Box>
+                  ) : (
+                    <Box alignItems="center" display="flex" gap="6">
+                      
+                    </Box>
+                  )}
+                  <DropdownIcon />
+                </Box>
+              )}
+                
                 {chain && (chains.length > 1 || unsupportedChain) && (
                   <Box
                     alignItems="center"
